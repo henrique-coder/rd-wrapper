@@ -1,0 +1,13 @@
+# IDE
+.idea
+.venv
+__pycache__
+
+# Directories
+# ...
+
+# Files
+# ...
+
+# Extensions
+*.env
