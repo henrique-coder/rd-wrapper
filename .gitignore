@@ -4,10 +4,10 @@
 __pycache__
 
 # Directories
-# ...
+debug
 
 # Files
-test.py
+debug.py
 
 # Extensions
 *.env
