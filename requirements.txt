@@ -1,2 +1,4 @@
+beautifulsoup4
+fake-useragent
 httpx
 langcodes
