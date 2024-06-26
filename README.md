@@ -11,7 +11,7 @@ from rd_wrapper import RDW
 
 
 # Initialize the wrapper with your API token or username and password
-rdw = RDW(api_token='YOUR_API_TOKEN', username='YOUR_USERNAME', password='YOUR_PASSWORD')
+rdw = RDW(api_token='YOUR_API_TOKEN', username='YOUR_USERNAME', password='YOUR_PASSWORD',  anonymous_access=False)
 
 # Getting account info
 print(f'Account E-Mail (str): {rdw.account_email}')
@@ -25,13 +25,20 @@ print(f'Account Avatar URL (str): {rdw.account_avatar_url}')
 print(f'Account Language Name (str): {rdw.account_language_name}')
 print(f'Account Language Code (str): {rdw.account_language_code}')
 
+# Retrieve server time and server iso time
+print(f'Server Time (str|int): {rdw.get_server_time(unix_timestamp=False)}')
+print(f'Server ISO Time (str|int): {rdw.get_server_iso_time(unix_timestamp=True)}')
+
+# Check if the url is supported
+print(f'Is URL Supported? (bool): {rdw.is_url_supported(url='http(s)://...')}')
+
 # Unrestricting a single URL (returns a dict with the download url and other info)
 print(f'Unlimited URL Data (dict): {rdw.get_unlimited_url_data(url='http(s)://...', password=None, remote_traffic=False)}')
 
 # Unrestricting a folder URL (returns a list of download URLs)
 print(f'Original/Unlimited Folder URLs (list): {rdw.get_unlimited_folder_url_list(url='http(s)://...', unrestrict_urls=True)}')
 
-# --> More methods are available, install the package and check the source code for more info
+# --> More methods are available to use, check the source code for more info
 ```
 
 
