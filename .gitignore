@@ -5,9 +5,12 @@ __pycache__
 
 # Directories
 debug
+build
+dist
+rd_wrapper.egg-info
 
 # Files
-debug.py
+# ...
 
 # Extensions
 *.env
