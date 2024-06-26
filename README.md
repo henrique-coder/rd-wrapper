@@ -1,5 +1,10 @@
 ## RD Wrapper
 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Henrique-Coder/rd-wrapper/.github%2Fworkflows%2Fpython-package.yml?branch=main&style=for-the-badge&logo=github&labelColor=gray&cacheSeconds=60&link=https%3A%2F%2Fgithub.com%2FHenrique-Coder%2Frd-wrapper)
+![PyPI - Version](https://img.shields.io/pypi/v/rd-wrapper?style=for-the-badge&logo=pypi&labelColor=gray&color=white&cacheSeconds=60&link=https%3A%2F%2Fpypi.org%2Fproject%2Frd-wrapper)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/rd-wrapper?style=for-the-badge&logo=pypi&labelColor=gray&color=white&cacheSeconds=60&link=https%3A%2F%2Fpypi.org%2Fproject%2Frd-wrapper)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/rd-wrapper?style=for-the-badge&logo=pypi&labelColor=gray&color=white&cacheSeconds=60&link=https%3A%2F%2Fpypi.org%2Fproject%2Frd-wrapper)
+
 A simple and easy-to-use Python wrapper for [Real-Debrid API](https://api.real-debrid.com).
 
 ### Installation (from PyPI)
