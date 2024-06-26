@@ -8,7 +8,7 @@ from sqlite3 import connect as sqlite3_connect
 from tempfile import gettempdir
 from threading import Thread
 from time import sleep
-from typing import *
+from typing import Optional, Union, List
 from urllib.parse import unquote
 
 from bs4 import BeautifulSoup
@@ -68,16 +68,25 @@ class RDW:
         if response.status_code == 200: self._raw_user_data = dict(response.json())
         else: raise Exceptions.InvalidAPIToken('Invalid Real-Debrid API token. Please provide a valid one.')
 
+        self.account_email = str(self._raw_user_data.get('email'))
+        self.account_type = 'Premium' if str(self._raw_user_data.get('type')).strip() == 'premium' else 'Free'
+        self.is_premium_account = bool(self.account_type == 'Premium')
+        self.premium_plan_expiration_timestamp = int(datetime.strptime(self._raw_user_data.get('expiration'), '%Y-%m-%dT%H:%M:%S.%fZ').timestamp())
+        self.account_fidelity_points = int(self._raw_user_data.get('points'))
         self.account_id = int(self._raw_user_data.get('id'))
         self.account_username = str(self._raw_user_data.get('username'))
-        self.account_email = str(self._raw_user_data.get('email'))
         self.account_avatar_url = unquote(self._raw_user_data.get('avatar'))
         self.account_language_code = str(self._raw_user_data.get('locale'))
         try: self.account_language_name = str(Language.get(self.account_language_code).display_name('en-us'))
         except LanguageTagError: self.account_language_name = 'Unknown'
-        self.is_premium_account = str(self._raw_user_data.get('type')).strip() == 'premium'
-        self.premium_expiration_time = int(datetime.strptime(self._raw_user_data.get('expiration'), '%Y-%m-%dT%H:%M:%S.%fZ').timestamp())
-        self.account_fidelity_points = int(self._raw_user_data.get('points'))
+
+    def __del__(self) -> None:
+        """
+        Ensure the HTTP client is closed when the object is deleted.
+        """
+
+        if self._http_client:
+            self._http_client.close()
 
     def get_api_token_from_credentials(self, username: str, password: str) -> str:
         """
@@ -113,14 +122,6 @@ class RDW:
         except httpx_exceptions.HTTPError: return False
 
         return bool(res.status_code == 200)
-
-    def __del__(self) -> None:
-        """
-        Ensure the HTTP client is closed when the object is deleted.
-        """
-
-        if self._http_client:
-            self._http_client.close()
 
     # Hidden methods
     def _premium_account_is_required(self) -> None:
