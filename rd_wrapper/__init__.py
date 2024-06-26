@@ -1,4 +1,5 @@
-# Local example: from rd_wrapper import RDW (PyPi example: pip install rd-wrapper)
+# Official repository at https://github.com/Henrique-Coder/rd-wrapper
+# Local example: from rd_wrapper import RDW (PyPI example: pip install rd-wrapper)
 
 from datetime import datetime
 from os import path
