@@ -4,6 +4,12 @@
 
 A simple and easy-to-use Python wrapper for [Real-Debrid API](https://api.real-debrid.com).
 
+### Installation (from PyPI)
+
+```bash
+python -m pip install rd-wrapper
+```
+
 ### Example Usage
 
 ```python
@@ -30,7 +36,7 @@ print(f'Server Time (str|int): {rdw.get_server_time(unix_timestamp=False)}')
 print(f'Server ISO Time (str|int): {rdw.get_server_iso_time(unix_timestamp=True)}')
 
 # Check if the url is supported
-print(f'Is URL Supported? (bool): {rdw.is_url_supported(url='http(s)://...')}')
+print(f'Is URL Supported? (bool): {rdw.is_url_supported(url='http(s)://...', password=None)}')
 
 # Unrestricting a single URL (returns a dict with the download url and other info)
 print(f'Unlimited URL Data (dict): {rdw.get_unlimited_url_data(url='http(s)://...', password=None, remote_traffic=False)}')
@@ -39,11 +45,4 @@ print(f'Unlimited URL Data (dict): {rdw.get_unlimited_url_data(url='http(s)://..
 print(f'Original/Unlimited Folder URLs (list): {rdw.get_unlimited_folder_url_list(url='http(s)://...', unrestrict_urls=True)}')
 
 # --> More methods are available to use, check the source code for more info
-```
-
-
-### Installation (from PyPI)
-
-```bash
-python -m pip install rd-wrapper
 ```
