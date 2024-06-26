@@ -4,8 +4,8 @@ from pathlib import Path
 
 setup(
     name='rd-wrapper',
-    version='0.0.2',
-    description='A simple and easy-to-use Python wrapper for Real-Debrid API (https://api.real-debrid.com).',
+    version='0.0.3',
+    description='A simple and easy-to-use Python wrapper for Real-Debrid API (https://api.real-debrid.com)',
     long_description=Path('README.md').read_text(),
     long_description_content_type='text/markdown',
     url='https://github.com/Henrique-Coder/rd-wrapper',
@@ -20,6 +20,7 @@ setup(
         'langcodes'
     ],
     classifiers=[
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries',
         'License :: OSI Approved :: MIT License',
