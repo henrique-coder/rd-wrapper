@@ -10,7 +10,8 @@ dist
 rd_wrapper.egg-info
 
 # Files
-# ...
+requirements.dev.txt
+upload_to_pypi.py
 
 # Extensions
 *.env
