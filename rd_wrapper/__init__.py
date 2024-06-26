@@ -1,1 +1,1 @@
-from .rd_wrapper import RDW, TokenCache, Exceptions
+from .rd_wrapper import RDW, APIToken, Exceptions

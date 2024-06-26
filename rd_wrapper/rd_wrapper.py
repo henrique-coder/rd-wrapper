@@ -1,5 +1,4 @@
-# Official repository at https://github.com/Henrique-Coder/rd-wrapper
-# Local example: from rd_wrapper import RDW (PyPI example: pip install rd-wrapper)
+# Official repository and documentation at https://github.com/Henrique-Coder/rd-wrapper
 
 from datetime import datetime
 from os import path
@@ -25,13 +24,13 @@ class RDW:
     A class to interact with the Real-Debrid API.
     """
 
-    def __init__(self, api_token: str = None, username: str = None, password: str = None, anonymous: bool = False) -> None:
+    def __init__(self, api_token: str = None, username: str = None, password: str = None, anonymous_access: bool = False) -> None:
         """
         Initialize the Real-Debrid API wrapper.
         :param api_token: Real-Debrid API token.
         :param username: Real-Debrid account username.
         :param password: Real-Debrid account password.
-        :param anonymous: Whether to enable anonymous access mode. (Anonymous access mode will not raise if no API token or username and password is provided and will work with non-premium endpoints)
+        :param anonymous_access: Whether to enable anonymous access mode. (Anonymous access mode does not require an API token, username, or password to send requests, only work with free endpoints)
         :raises Exceptions.MissingCredentials: If the username or password is missing.
         :raises Exceptions.InvalidCredentials: If the username or password is invalid.
         :raises Exceptions.InvalidAPIToken: If the API token is invalid.
@@ -40,13 +39,13 @@ class RDW:
 
         self._base_api_url = 'https://api.real-debrid.com/rest/1.0'
         self._http_client: Optional[Client] = None
-        self.cache = TokenCache()
+        self.cache = APIToken()
 
-        if not anonymous:
+        if not anonymous_access:
             if not api_token and (not username or not password):
                 raise Exceptions.MissingCredentials('Username and password are required if no API token is provided.')
 
-            self._api_token = api_token or self.get_api_token_from_credentials(username, password)
+            self._api_token = api_token or self._get_api_token_from_credentials(username, password)
             self._http_client = Client(headers={'Authorization': f'Bearer {self._api_token}', 'Accept': 'application/json', 'Content-Type': 'application/json'}, follow_redirects=False, timeout=10)
 
             try: response = self._http_client.get(self._base_api_url + '/user')
@@ -82,41 +81,6 @@ class RDW:
         if self._http_client:
             self._http_client.close()
 
-    def get_api_token_from_credentials(self, username: str, password: str) -> str:
-        """
-        Get the API token from the cache or generate a new one.
-        :param username: Real-Debrid account username.
-        :param password: Real-Debrid account password.
-        :return: The API token.
-        :raises Exceptions.InvalidCredentials: If the username or password is invalid.
-        :raises Exceptions.NetworkError: If an error occurs while retrieving the API token.
-        """
-
-        token = self.cache.get_token(username, password)
-
-        if token and self.is_token_valid(token):
-            return token
-
-        auth_token = get_auth_token(username, password)
-        token = get_api_token(auth_token)
-        self.cache.set_token(token, username, password)
-
-        return token
-
-    def is_token_valid(self, token: str) -> bool:
-        """
-        Check if the given token is valid.
-        :param token: Real-Debrid API token.
-        :return: True if the token is valid. Otherwise, return False.
-        """
-
-        client = Client(params={'auth_token': token}, headers={'Accept': 'application/json', 'Content-Type': 'application/json'}, follow_redirects=False, timeout=10)
-
-        try: res = client.get(self._base_api_url + '/user')
-        except httpx_exceptions.HTTPError: return False
-
-        return bool(res.status_code == 200)
-
     # Hidden methods
     def _premium_account_is_required(self) -> None:
         """
@@ -126,6 +90,40 @@ class RDW:
 
         if not self.is_premium_account:
             raise Exceptions.NonPremiumAccount('Only premium users can use this function. Please upgrade your account to premium at: https://real-debrid.com/premium')
+
+    def _is_token_valid(self, token: str) -> bool:
+        """
+        Check if the given token is valid.
+        :param token: Real-Debrid API token.
+        :return: True if the token is valid. Otherwise, return False.
+        :raises Exceptions.NetworkError: If an error occurs while checking if the token is valid.
+        """
+
+        try: response = get(url=self._base_api_url + '/user', headers={'Authorization': f'Bearer {token}', 'Accept': 'application/json', 'Content-Type': 'application/json'}, follow_redirects=False, timeout=10)
+        except httpx_exceptions.HTTPError: raise Exceptions.NetworkError('An error occurred while checking if the token is valid.')
+
+        return bool(response.status_code == 200)
+
+    def _get_api_token_from_credentials(self, username: str, password: str) -> str:
+        """
+        Get the API token from the cache or generate a new one.
+        :param username: Real-Debrid account username.
+        :param password: Real-Debrid account password.
+        :return: The API token.
+        :raises Exceptions.InvalidCredentials: If the username or password is invalid.
+        :raises Exceptions.NetworkError: If an error occurs while retrieving the API token.
+        """
+
+        token = self.cache._get_token(username, password)
+
+        if token and self._is_token_valid(token):
+            return token
+
+        auth_token = APIToken.get_auth_token(username, password)
+        token = APIToken.get_api_token(auth_token)
+        self.cache._set_token(token, username, password)
+
+        return token
 
     # Public methods (internal)
     def stop_http_session(self) -> None:
@@ -311,7 +309,7 @@ class RDW:
 
         return json_data
 
-class TokenCache:
+class APIToken:
     """
     A class to cache Real-Debrid API tokens using SQLite.
     """
@@ -340,7 +338,7 @@ class TokenCache:
                                 PRIMARY KEY (username, password))''')
             conn.commit()
 
-    def get_token(self, username: str, password: str) -> Optional[str]:
+    def _get_token(self, username: str, password: str) -> Optional[str]:
         """
         Get the token from the cache.
         :param username: Real-Debrid account username.
@@ -355,7 +353,7 @@ class TokenCache:
 
             return result[0] if result else None
 
-    def set_token(self, token: str, username: str, password: str) -> None:
+    def _set_token(self, token: str, username: str, password: str) -> None:
         """
         Set a new token in the cache.
         :param token: Real-Debrid API token.
@@ -368,79 +366,81 @@ class TokenCache:
             cursor.execute('''REPLACE INTO tokens (username, password, token) VALUES (?, ?, ?)''', (username, password, token))
             conn.commit()
 
-    # ---> Unused method (for now)
-    # def clear_cache(self, username: str, password: str) -> None:
-    #     """
-    #     Clear the token cache for the given username and password.
-    #     :param username: Real-Debrid account username.
-    #     :param password: Real-Debrid account password.
-    #     """
-    #
-    #     with sqlite3_connect(self.db_path) as conn:
-    #         cursor = conn.cursor()
-    #         cursor.execute('''DELETE FROM tokens WHERE username=? AND password=?''', (username, password))
-    #         conn.commit()
+    def _clear_cache(self, username: str, password: str) -> None:
+        """
+        Clear the token cache for the given username and password.
+        :param username: Real-Debrid account username.
+        :param password: Real-Debrid account password.
+        """
 
-def get_auth_token(username: str, password: str) -> str:
-    """
-    Obtain an authentication token using the provided username and password.
-    :param username: Real-Debrid account username.
-    :param password: Real-Debrid account password.
-    :return: The authentication token.
-    :raises Exceptions.InvalidCredentials: If the username or password is invalid.
-    """
+        with sqlite3_connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''DELETE FROM tokens WHERE username=? AND password=?''', (username, password))
+            conn.commit()
 
-    params = {'user': username, 'pass': password, 'pin_challenge': '', 'pin_answer': 'PIN: 000000', 'time': datetime.now().timestamp()}
-    headers = {'User-Agent': fake_useragent.random, 'X-Requested-With': 'XMLHttpRequest'}
-    response = get('https://real-debrid.com/ajax/login.php', params=params, headers=headers, timeout=10)
+    @staticmethod
+    def get_auth_token(username: str, password: str) -> str:
+        """
+        Obtain an authentication token using the provided username and password.
+        :param username: Real-Debrid account username.
+        :param password: Real-Debrid account password.
+        :return: The authentication token.
+        :raises Exceptions.InvalidCredentials: If the username or password is invalid.
+        """
 
-    if response.status_code != 200 or response.json().get('error') != 0:
-        raise Exceptions.InvalidCredentials('Invalid Real-Debrid account username or password.')
+        params = {'user': username, 'pass': password, 'pin_challenge': '', 'pin_answer': 'PIN: 000000', 'time': datetime.now().timestamp()}
+        headers = {'User-Agent': fake_useragent.random, 'X-Requested-With': 'XMLHttpRequest'}
+        response = get('https://real-debrid.com/ajax/login.php', params=params, headers=headers, timeout=10)
 
-    return response.json()['cookie'].replace('auth=', str()).replace(';', str()).strip()
+        if response.status_code != 200 or response.json().get('error') != 0:
+            raise Exceptions.InvalidCredentials('Invalid Real-Debrid account username or password.')
 
-def get_api_token(auth_token: str) -> str:
-    """
-    Retrieve the current API token using the provided authentication token.
-    :param auth_token: The authentication token.
-    :return: Current API token.
-    :raises Exceptions.NetworkError: If an error occurs while generating the API token.
-    """
+        return response.json()['cookie'].replace('auth=', str()).replace(';', str()).strip()
 
-    headers = {'User-Agent': fake_useragent.random}
-    cookies = {'auth': auth_token}
-    response = get('https://real-debrid.com/apitoken', headers=headers, cookies=cookies, timeout=10)
+    @staticmethod
+    def get_api_token(auth_token: str) -> str:
+        """
+        Retrieve the current API token using the provided authentication token.
+        :param auth_token: The authentication token.
+        :return: Current API token.
+        :raises Exceptions.NetworkError: If an error occurs while generating the API token.
+        """
 
-    if response.status_code != 200 or not response.text.strip():
-        raise Exceptions.NetworkError('An error occurred while trying to generate the API token.')
+        headers = {'User-Agent': fake_useragent.random}
+        cookies = {'auth': auth_token}
+        response = get('https://real-debrid.com/apitoken', headers=headers, cookies=cookies, timeout=10)
 
-    soup = BeautifulSoup(response.text, 'html.parser')
-    script_tag = soup.find('script', string=lambda text: text and 'document.querySelectorAll' in text)
-    token_value = search(r'value\s*=\s*\'([^\']+)\'', script_tag.string).group(1)
+        if response.status_code != 200 or not response.text.strip():
+            raise Exceptions.NetworkError('An error occurred while trying to generate the API token.')
 
-    return token_value
+        soup = BeautifulSoup(response.text, 'html.parser')
+        script_tag = soup.find('script', string=lambda text: text and 'document.querySelectorAll' in text)
+        token_value = search(r'value\s*=\s*\'([^\']+)\'', script_tag.string).group(1)
 
-def generate_new_api_token(auth_token: str) -> str:
-    """
-    Generate a new API token using the provided authentication token.
-    :param auth_token: The authentication token.
-    :return: New API token.
-    :raises Exceptions.NetworkError: If an error occurs while refreshing the API token.
-    """
+        return token_value
 
-    headers = {'User-Agent': fake_useragent.random}
-    data = {'refresh': '1'}
-    cookies = {'auth': auth_token}
-    response = post('https://real-debrid.com/apitoken', headers=headers, data=data, cookies=cookies, timeout=10)
+    @staticmethod
+    def generate_new_api_token(auth_token: str) -> str:
+        """
+        Generate a new API token using the provided authentication token.
+        :param auth_token: The authentication token.
+        :return: New API token.
+        :raises Exceptions.NetworkError: If an error occurs while refreshing the API token.
+        """
 
-    if response.status_code != 200 or not response.text.strip():
-        raise Exceptions.NetworkError('An error occurred while trying to refresh the API token.')
+        headers = {'User-Agent': fake_useragent.random}
+        data = {'refresh': '1'}
+        cookies = {'auth': auth_token}
+        response = post('https://real-debrid.com/apitoken', headers=headers, data=data, cookies=cookies, timeout=10)
 
-    soup = BeautifulSoup(response.text, 'html.parser')
-    script_tag = soup.find('script', string=lambda text: text and 'document.querySelectorAll' in text)
-    token_value = search(r'value\s*=\s*\'([^\']+)\'', script_tag.string).group(1)
+        if response.status_code != 200 or not response.text.strip():
+            raise Exceptions.NetworkError('An error occurred while trying to refresh the API token.')
 
-    return token_value
+        soup = BeautifulSoup(response.text, 'html.parser')
+        script_tag = soup.find('script', string=lambda text: text and 'document.querySelectorAll' in text)
+        token_value = search(r'value\s*=\s*\'([^\']+)\'', script_tag.string).group(1)
+
+        return token_value
 
 class Exceptions:
     class InvalidAPIToken(Exception): pass
