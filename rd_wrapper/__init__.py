@@ -1,1 +1,1 @@
-from .main import RDW, TokenCache, Exceptions
+from .rd_wrapper import RDW, TokenCache, Exceptions

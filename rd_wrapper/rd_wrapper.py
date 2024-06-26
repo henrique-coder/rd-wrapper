@@ -20,33 +20,18 @@ from langcodes import Language, LanguageTagError
 
 fake_useragent = FakeUserAgent()
 
-class Exceptions:
-    class InvalidAPIToken(Exception): pass
-    class MissingCredentials(Exception): pass
-    class InvalidCredentials(Exception): pass
-    class NetworkError(Exception): pass
-    class NonPremiumAccount(Exception): pass
-    class APITokenDisabledSuccessfully(Exception): pass
-    class GetServerTimeError(Exception): pass
-    class GetServerISOTimeError(Exception): pass
-    class GetUnlimitedURLDataError(Exception): pass
-    class GetUnlimitedFolderURLListError(Exception): pass
-    class EmptyFolderOrNotSupportedFolderURLError(Exception): pass
-    class IsURLSupportedError(Exception): pass
-    class RemoteTrafficExhaustedError(Exception): pass
-    class UnsupportedHosterError(Exception): pass
-
 class RDW:
     """
     A class to interact with the Real-Debrid API.
     """
 
-    def __init__(self, api_token: Optional[str] = None, username: Optional[str] = None, password: Optional[str] = None) -> None:
+    def __init__(self, api_token: str = None, username: str = None, password: str = None, anonymous: bool = False) -> None:
         """
         Initialize the Real-Debrid API wrapper.
         :param api_token: Real-Debrid API token.
         :param username: Real-Debrid account username.
         :param password: Real-Debrid account password.
+        :param anonymous: Whether to enable anonymous access mode. (Anonymous access mode will not raise if no API token or username and password is provided and will work with non-premium endpoints)
         :raises Exceptions.MissingCredentials: If the username or password is missing.
         :raises Exceptions.InvalidCredentials: If the username or password is invalid.
         :raises Exceptions.InvalidAPIToken: If the API token is invalid.
@@ -57,29 +42,37 @@ class RDW:
         self._http_client: Optional[Client] = None
         self.cache = TokenCache()
 
-        if not api_token and (not username or not password):
-            raise Exceptions.MissingCredentials('Username and password are required if no API token is provided.')
+        if not anonymous:
+            if not api_token and (not username or not password):
+                raise Exceptions.MissingCredentials('Username and password are required if no API token is provided.')
 
-        self._api_token = api_token or self.get_api_token_from_credentials(username, password)
-        self._http_client = Client(params={'auth_token': self._api_token}, headers={'Accept': 'application/json', 'Content-Type': 'application/json'}, follow_redirects=False, timeout=10)
+            self._api_token = api_token or self.get_api_token_from_credentials(username, password)
+            self._http_client = Client(headers={'Authorization': f'Bearer {self._api_token}', 'Accept': 'application/json', 'Content-Type': 'application/json'}, follow_redirects=False, timeout=10)
 
-        try: response = self._http_client.get(self._base_api_url + '/user')
-        except httpx_exceptions.HTTPError as e: raise Exceptions.NetworkError('An error occurred while trying to retrieve the user data. - Error: ' + str(e))
+            try: response = self._http_client.get(self._base_api_url + '/user')
+            except httpx_exceptions.HTTPError as e: raise Exceptions.NetworkError('An error occurred while trying to retrieve the user data. - Error: ' + str(e))
 
-        if response.status_code == 200: self._raw_user_data = dict(response.json())
-        else: raise Exceptions.InvalidAPIToken('Invalid Real-Debrid API token. Please provide a valid one.')
+            if response.status_code == 200: self._raw_user_data = dict(response.json())
+            else: raise Exceptions.InvalidAPIToken('Invalid Real-Debrid API token. Please provide a valid one.')
 
-        self.account_email = str(self._raw_user_data.get('email'))
-        self.account_type = 'Premium' if str(self._raw_user_data.get('type')).strip() == 'premium' else 'Free'
-        self.is_premium_account = bool(self.account_type == 'Premium')
-        self.premium_plan_expiration_timestamp = int(datetime.strptime(self._raw_user_data.get('expiration'), '%Y-%m-%dT%H:%M:%S.%fZ').timestamp())
-        self.account_fidelity_points = int(self._raw_user_data.get('points'))
-        self.account_id = int(self._raw_user_data.get('id'))
-        self.account_username = str(self._raw_user_data.get('username'))
-        self.account_avatar_url = unquote(self._raw_user_data.get('avatar'))
-        self.account_language_code = str(self._raw_user_data.get('locale'))
-        try: self.account_language_name = str(Language.get(self.account_language_code).display_name('en-us'))
-        except LanguageTagError: self.account_language_name = 'Unknown'
+            self.is_anonymous_access = False
+            self.account_email = str(self._raw_user_data.get('email'))
+            self.account_type = 'Premium' if str(self._raw_user_data.get('type')).strip() == 'premium' else 'Free'
+            self.is_premium_account = bool(self.account_type == 'Premium')
+            self.premium_plan_expiration_timestamp = int(datetime.strptime(self._raw_user_data.get('expiration'), '%Y-%m-%dT%H:%M:%S.%fZ').timestamp())
+            self.account_fidelity_points = int(self._raw_user_data.get('points'))
+            self.account_id = int(self._raw_user_data.get('id'))
+            self.account_username = str(self._raw_user_data.get('username'))
+            self.account_avatar_url = unquote(self._raw_user_data.get('avatar'))
+            self.account_language_code = str(self._raw_user_data.get('locale'))
+            try: self.account_language_name = str(Language.get(self.account_language_code).display_name('en-us'))
+            except LanguageTagError: self.account_language_name = 'Unknown'
+        else:
+            self._http_client = Client(headers={'Accept': 'application/json', 'Content-Type': 'application/json'}, follow_redirects=False, timeout=10)
+            self.is_anonymous_access = True
+            self.account_email = self.account_type = self.account_username = self.account_avatar_url = self.account_language_code = self.account_language_name = None
+            self.is_premium_account = False
+            self.premium_plan_expiration_timestamp = self.account_fidelity_points = self.account_id = 0
 
     def __del__(self) -> None:
         """
@@ -212,6 +205,8 @@ class RDW:
         :raises Exceptions.IsURLSupportedError: If an error occurs while checking if the given url is supported by Real-Debrid.
         """
 
+        RDW._premium_account_is_required(self)
+
         try: response = self._http_client.post(self._base_api_url + '/unrestrict/check', data={'link': url, 'password': password})
         except httpx_exceptions.HTTPError: raise Exceptions.IsURLSupportedError('An error occurred while checking if the given url is supported by Real-Debrid.')
 
@@ -298,7 +293,7 @@ class RDW:
         if unrestrict_urls:
             def _get_unlimited_url_data_threading(_q: Queue, _url: str) -> None:
                 data = self.get_unlimited_url_data(_url)
-                _q.put(data.get('unrestrictedUrl', str()) if data else str())
+                _q.put(data.get('unrestrictedUrl', None) if data else None)
 
             q = Queue()
             threads = list()
@@ -446,3 +441,19 @@ def generate_new_api_token(auth_token: str) -> str:
     token_value = search(r'value\s*=\s*\'([^\']+)\'', script_tag.string).group(1)
 
     return token_value
+
+class Exceptions:
+    class InvalidAPIToken(Exception): pass
+    class MissingCredentials(Exception): pass
+    class InvalidCredentials(Exception): pass
+    class NetworkError(Exception): pass
+    class NonPremiumAccount(Exception): pass
+    class APITokenDisabledSuccessfully(Exception): pass
+    class GetServerTimeError(Exception): pass
+    class GetServerISOTimeError(Exception): pass
+    class GetUnlimitedURLDataError(Exception): pass
+    class GetUnlimitedFolderURLListError(Exception): pass
+    class EmptyFolderOrNotSupportedFolderURLError(Exception): pass
+    class IsURLSupportedError(Exception): pass
+    class RemoteTrafficExhaustedError(Exception): pass
+    class UnsupportedHosterError(Exception): pass
