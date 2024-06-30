@@ -4,10 +4,9 @@
 __pycache__
 
 # Directories
-debug
+.debug
 build
 dist
-rd_wrapper.egg-info
 
 # Files
 requirements.dev.txt
@@ -15,3 +14,4 @@ upload_to_pypi.py
 
 # Extensions
 *.env
+*.egg-info
