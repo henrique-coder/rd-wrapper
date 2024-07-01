@@ -4,7 +4,7 @@ from pathlib import Path
 
 setup(
     name='rd-wrapper',
-    version='0.0.5',
+    version='0.0.6',
     description='A simple and easy-to-use Python wrapper for Real-Debrid API (https://api.real-debrid.com)',
     long_description=Path('README.md').read_text(),
     long_description_content_type='text/markdown',
