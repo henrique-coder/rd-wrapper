@@ -1,5 +1,6 @@
 # Official repository and documentation at https://github.com/Henrique-Coder/rd-wrapper
 
+# Built-in modules
 from datetime import datetime
 from os import path
 from queue import Queue
@@ -11,6 +12,7 @@ from time import sleep
 from typing import Optional, Union, List
 from urllib.parse import unquote
 
+# Third-party modules
 from bs4 import BeautifulSoup
 from fake_useragent import FakeUserAgent
 from httpx import _exceptions as httpx_exceptions, Client, get, post
@@ -393,6 +395,7 @@ class APIToken:
         response = get('https://real-debrid.com/ajax/login.php', params=params, headers=headers, timeout=10)
 
         if response.status_code != 200 or response.json().get('error') != 0:
+            APIToken()._clear_cache(username, password)
             raise Exceptions.InvalidCredentials('Invalid Real-Debrid account username or password.')
 
         return response.json()['cookie'].replace('auth=', str()).replace(';', str()).strip()
