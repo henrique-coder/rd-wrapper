@@ -39,9 +39,9 @@ class RDW:
         :raises Exceptions.NetworkError: If an error occurs while retrieving the API token.
         """
 
-        self._base_api_url = 'https://api.real-debrid.com/rest/1.0'
+        self._base_api_url: str = 'https://api.real-debrid.com/rest/1.0'
         self._http_client: Optional[Client] = None
-        self.cache = APIToken()
+        self.cache: APIToken = APIToken()
 
         if not anonymous_access:
             if not api_token and (not username or not password):
