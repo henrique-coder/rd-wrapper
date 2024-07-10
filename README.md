@@ -21,7 +21,14 @@ from rd_wrapper import RDW
 # Initialize the wrapper with your API token or username and password
 rdw = RDW(api_token='YOUR_API_TOKEN', username='YOUR_USERNAME', password='YOUR_PASSWORD',  anonymous_access=False)
 
-# Getting account info
+# Extracting current API token from the account
+print(f'Current API Token (str): {rdw.get_current_api_token(rdw.auth_token)}')
+
+# Generating new API token
+print(f'New API Token (str): {rdw.generate_new_api_token(rdw.auth_token)}')
+
+# Extracting account information
+print(f'Is Anonymous Access? (bool): {rdw.is_anonymous_access}')
 print(f'Account E-Mail (str): {rdw.account_email}')
 print(f'Is Account Premium? (bool): {rdw.is_premium_account}')
 print(f'Account Type (str): {rdw.account_type}')
@@ -38,7 +45,7 @@ print(f'Server Time (str|int): {rdw.get_server_time(unix_timestamp=False)}')
 print(f'Server ISO Time (str|int): {rdw.get_server_iso_time(unix_timestamp=True)}')
 
 # Check if the url is supported
-print(f'Is URL Supported? (bool): {rdw.is_url_supported(url='http(s)://...', password=None)}')
+print(f'Is URL Supported? (bool): {rdw.is_supported_url(url='http(s)://...', password=None)}')
 
 # Unrestricting a single URL (returns a dict with the download url and other info)
 print(f'Unlimited URL Data (dict): {rdw.get_unlimited_url_data(url='http(s)://...', password=None, remote_traffic=False)}')
@@ -46,5 +53,5 @@ print(f'Unlimited URL Data (dict): {rdw.get_unlimited_url_data(url='http(s)://..
 # Unrestricting a folder URL (returns a list of download URLs)
 print(f'Original/Unlimited Folder URLs (list): {rdw.get_unlimited_folder_url_list(url='http(s)://...', unrestrict_urls=True)}')
 
-# --> More methods are available to use, check the source code for more info
+# --> Other methods are available to use, check the source code and the documentation for more information
 ```
