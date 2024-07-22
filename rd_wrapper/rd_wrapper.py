@@ -16,10 +16,11 @@ from urllib.parse import unquote
 from bs4 import BeautifulSoup
 from fake_useragent import FakeUserAgent
 from httpx import Client, get, post, _exceptions as httpx_exceptions
-from langcodes import Language, LanguageTagError
 
 
+# Constants
 fake_useragent = FakeUserAgent()
+
 
 class RDW:
     """
@@ -80,8 +81,6 @@ class RDW:
             self.account_username = str(self._raw_user_data.get('username'))
             self.account_avatar_url = unquote(self._raw_user_data.get('avatar'))
             self.account_language_code = str(self._raw_user_data.get('locale'))
-            try: self.account_language_name = str(Language.get(self.account_language_code).display_name('en-us'))
-            except LanguageTagError: self.account_language_name = 'Unknown'
         else:
             self._http_client = Client(headers={'Accept': 'application/json', 'Content-Type': 'application/json'}, follow_redirects=False, timeout=10)
             self.is_anonymous_access = True

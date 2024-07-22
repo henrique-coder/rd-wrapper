@@ -37,7 +37,6 @@ print(f'Account Fidelity Points (int): {rdw.account_fidelity_points}')
 print(f'Account ID (int): {rdw.account_id}')
 print(f'Account Username (str): {rdw.account_username}')
 print(f'Account Avatar URL (str): {rdw.account_avatar_url}')
-print(f'Account Language Name (str): {rdw.account_language_name}')
 print(f'Account Language Code (str): {rdw.account_language_code}')
 
 # Retrieve server time and server iso time
