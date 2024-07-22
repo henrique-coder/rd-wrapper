@@ -4,7 +4,7 @@ from pathlib import Path
 
 setup(
     name='rd-wrapper',
-    version='0.0.7',
+    version='0.0.8',
     description='A simple and easy-to-use Python wrapper for Real-Debrid API (https://api.real-debrid.com)',
     long_description=Path('README.md').read_text(),
     long_description_content_type='text/markdown',
@@ -16,8 +16,7 @@ setup(
     install_requires=[
         'beautifulsoup4',
         'fake-useragent',
-        'httpx',
-        'langcodes'
+        'httpx'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
